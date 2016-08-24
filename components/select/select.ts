@@ -6,28 +6,27 @@ import { escapeRegexp } from './common';
 import { OffClickDirective } from './off-click';
 
 let styles = `
-.ui-select-toggle {
-  position: relative;
-
-  /* hardcoded, should use variable from bootstrap */
-  padding: 0.375rem 0.75rem;
-}
-
-/* Fix Bootstrap dropdown position when inside a input-group */
 .input-group > .dropdown {
-  /* Instead of relative */
   position: static;
 }
 
-.ui-select-match > .btn {
-  /* Instead of center because of .btn */
+.dropdown-menu > li > a {
+  margin: 0;
+  padding: 0 12px;
+}
+
+.ui-select-match .btn {
   text-align: left !important;
 }
 
-.ui-select-match > .caret {
+.ui-select-match .caret {
   position: absolute;
   top: 45%;
   right: 15px;
+}
+
+.ui-select-match .close {
+  line-height: 0.8;
 }
 
 .ui-disabled {
@@ -66,9 +65,6 @@ let styles = `
   outline: none;
   height: 1.9em;
   margin-bottom: 3px;
-
-  /* hardcoded, should use variable from bootstrap, but must be adjusted because... reasons */
-  padding: 0.375rem 0.55rem;
 }
 
 .ui-select-multiple .ui-select-match-item {
@@ -81,14 +77,12 @@ let optionsTemplate = `
     <ul *ngIf="optionsOpened && options && options.length > 0 && !firstItemHasChildren"
         class="ui-select-choices dropdown-menu" role="menu">
       <li *ngFor="let o of options" role="menuitem">
-        <div class="ui-select-choices-row"
-             [class.active]="isActive(o)"
-             (mouseenter)="selectActive(o)"
-             (click)="selectMatch(o, $event)">
-          <a href="javascript:void(0)" class="dropdown-item">
-            <div [innerHtml]="o.text | highlight:inputValue"></div>
-          </a>
-        </div>
+        <a href="javascript:void(0)"
+          [ngClass]="{'active': isActive(o)}"
+          (mouseenter)="selectActive(o)"
+          (click)="selectMatch(o, $event)">
+          <span [innerHtml]="o.text | highlight:inputValue"></span>
+        </a>
       </li>
     </ul>
 
@@ -104,7 +98,7 @@ let optionsTemplate = `
              (mouseenter)="selectActive(o)"
              (click)="selectMatch(o, $event)"
              [ngClass]="{'active': isActive(o)}">
-          <a href="javascript:void(0)" class="dropdown-item">
+          <a href="javascript:void(0)" class="ui-select-choices-row-inner">
             <div [innerHtml]="o.text | highlight:inputValue"></div>
           </a>
         </div>
@@ -136,7 +130,7 @@ let optionsTemplate = `
               [innerHTML]="active[0].text"></span>
         <i class="dropdown-toggle pull-right"></i>
         <i class="caret pull-right"></i>
-        <a *ngIf="allowClear && active.length>0" style="margin-right: 10px; padding: 0;"
+        <a *ngIf="allowClear && active.length>0" style="margin-right: 15px; padding: 0;"
           (click)="remove(activeOption)" class="close pull-right">
           &times;
         </a>
@@ -160,12 +154,11 @@ let optionsTemplate = `
     <div [ngClass]="{'ui-disabled': disabled}"></div>
     <span class="ui-select-match">
         <span *ngFor="let a of active">
-            <span class="ui-select-match-item btn btn-default btn-secondary btn-sm"
+            <span class="ui-select-match-item btn btn-default btn-xs"
                   tabindex="-1"
-                  type="button"
-                  [ngClass]="{'btn-default': true}">
+                  type="button">
                <a class="close"
-                  style="margin-left: 10px; padding: 0;"
+                  style="margin-left: 5px; padding: 0;"
                   (click)="remove(a)">&times;</a>
                <span>{{a.text}}</span>
            </span>
