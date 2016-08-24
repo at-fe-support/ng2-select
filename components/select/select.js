@@ -17,20 +17,21 @@ var core_1 = require('@angular/core');
 var select_item_1 = require('./select-item');
 var select_pipes_1 = require('./select-pipes');
 var common_1 = require('./common');
-var off_click_1 = require('./off-click');
 var styles = "\n.input-group > .dropdown {\n  position: static;\n}\n\n.dropdown-menu > li > a {\n  margin: 0;\n  padding: 0 12px;\n}\n\n.ui-select-match .btn {\n  text-align: left !important;\n}\n\n.ui-select-match .caret {\n  position: absolute;\n  top: 45%;\n  right: 15px;\n}\n\n.ui-select-match .close {\n  line-height: 0.8;\n}\n\n.ui-disabled {\n  background-color: #eceeef;\n  border-radius: 4px;\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  z-index: 5;\n  opacity: 0.6;\n  top: 0;\n  left: 0;\n  cursor: not-allowed;\n}\n\n.ui-select-choices {\n  width: 100%;\n  height: auto;\n  max-height: 200px;\n  overflow-x: hidden;\n  margin-top: 0;\n}\n\n.ui-select-multiple .ui-select-choices {\n  margin-top: 1px;\n}\n\n.ui-select-multiple {\n  height: auto;\n  padding: 3px 3px 0 3px;\n}\n\n.ui-select-multiple input.ui-select-search {\n  background-color: transparent !important; /* To prevent double background when disabled */\n  border: none;\n  outline: none;\n  height: 1.9em;\n  margin-bottom: 3px;\n}\n\n.ui-select-multiple .ui-select-match-item {\n  outline: 0;\n  margin: 0 3px 3px 0;\n}\n";
-var optionsTemplate = "\n    <ul *ngIf=\"optionsOpened && options && options.length > 0 && !firstItemHasChildren\"\n        class=\"ui-select-choices dropdown-menu\" role=\"menu\">\n      <li *ngFor=\"let o of options\" role=\"menuitem\">\n        <a href=\"javascript:void(0)\"\n          [ngClass]=\"{'active': isActive(o)}\"\n          (mouseenter)=\"selectActive(o)\"\n          (click)=\"selectMatch(o, $event)\">\n          <span [innerHtml]=\"o.text | highlight:inputValue\"></span>\n        </a>\n      </li>\n    </ul>\n\n    <ul *ngIf=\"optionsOpened && options && options.length > 0 && firstItemHasChildren\"\n        class=\"ui-select-choices dropdown-menu\" role=\"menu\">\n      <li *ngFor=\"let c of options; let index=index\" role=\"menuitem\">\n        <div class=\"divider dropdown-divider\" *ngIf=\"index > 0\"></div>\n        <div class=\"dropdown-header\">{{c.text}}</div>\n\n        <div *ngFor=\"let o of c.children\"\n             class=\"ui-select-choices-row\"\n             [class.active]=\"isActive(o)\"\n             (mouseenter)=\"selectActive(o)\"\n             (click)=\"selectMatch(o, $event)\"\n             [ngClass]=\"{'active': isActive(o)}\">\n          <a href=\"javascript:void(0)\" class=\"ui-select-choices-row-inner\">\n            <div [innerHtml]=\"o.text | highlight:inputValue\"></div>\n          </a>\n        </div>\n      </li>\n    </ul>\n";
+var optionsTemplate = "<ul *ngIf=\"optionsOpened && options && options.length > 0 && !firstItemHasChildren\"\n    class=\"ui-select-choices dropdown-menu\" role=\"menu\">\n  <li *ngFor=\"let o of options\" role=\"menuitem\">\n    <a href=\"javascript:void(0)\"\n      [ngClass]=\"{'active': isActive(o)}\"\n      (mouseenter)=\"selectActive(o)\"\n      (click)=\"selectMatch(o, $event)\">\n      <span [innerHtml]=\"o.text | highlight:inputValue\"></span>\n    </a>\n  </li>\n</ul>\n\n<ul *ngIf=\"optionsOpened && options && options.length > 0 && firstItemHasChildren\"\n    class=\"ui-select-choices dropdown-menu\" role=\"menu\">\n  <li *ngFor=\"let c of options; let index=index\" role=\"menuitem\">\n    <div class=\"divider dropdown-divider\" *ngIf=\"index > 0\"></div>\n    <div class=\"dropdown-header\">{{c.text}}</div>\n\n    <div *ngFor=\"let o of c.children\"\n         class=\"ui-select-choices-row\"\n         [class.active]=\"isActive(o)\"\n         (mouseenter)=\"selectActive(o)\"\n         (click)=\"selectMatch(o, $event)\"\n         [ngClass]=\"{'active': isActive(o)}\">\n      <a href=\"javascript:void(0)\" class=\"ui-select-choices-row-inner\">\n        <div [innerHtml]=\"o.text | highlight:inputValue\"></div>\n      </a>\n    </div>\n  </li>\n</ul>";
 var SelectComponent = (function () {
     function SelectComponent(element) {
         this.allowClear = false;
         this.placeholder = '';
         this.idField = 'id';
         this.textField = 'text';
+        this.childrenField = 'children';
         this.multiple = false;
         this.data = new core_1.EventEmitter();
         this.selected = new core_1.EventEmitter();
         this.removed = new core_1.EventEmitter();
         this.typed = new core_1.EventEmitter();
+        this.blur = new core_1.EventEmitter();
         this.options = [];
         this.itemObjects = [];
         this.inputMode = false;
@@ -40,7 +41,6 @@ var SelectComponent = (function () {
         this._disabled = false;
         this._active = [];
         this.element = element;
-        this.clickedOutside = this.clickedOutside.bind(this);
     }
     Object.defineProperty(SelectComponent.prototype, "items", {
         set: function (value) {
@@ -50,11 +50,13 @@ var SelectComponent = (function () {
             }
             else {
                 this._items = value.filter(function (item) {
-                    if ((typeof item === 'string' && item) || (typeof item === 'object' && item && item.text && item.id)) {
+                    if ((typeof item === 'string' && item) || (typeof item === 'object' && item && item[_this.textField] && item[_this.idField])) {
                         return item;
                     }
                 });
-                this.itemObjects = this._items.map(function (item) { return (typeof item === 'string' ? new select_item_1.SelectItem(item) : new select_item_1.SelectItem({ id: item[_this.idField], text: item[_this.textField] })); });
+                this.itemObjects = this._items.map(function (item) { return (typeof item === 'string' ? new select_item_1.SelectItem(item) : new select_item_1.SelectItem({
+                    id: item[_this.idField], text: item[_this.textField], children: item[_this.childrenField]
+                })); });
             }
         },
         enumerable: true,
@@ -196,10 +198,6 @@ var SelectComponent = (function () {
             this[type].next(value);
         }
     };
-    SelectComponent.prototype.clickedOutside = function () {
-        this.inputMode = false;
-        this.optionsOpened = false;
-    };
     Object.defineProperty(SelectComponent.prototype, "firstItemHasChildren", {
         get: function () {
             return this.itemObjects[0] && this.itemObjects[0].hasChildren();
@@ -250,7 +248,7 @@ var SelectComponent = (function () {
         this.activeOption = value;
     };
     SelectComponent.prototype.isActive = function (value) {
-        return this.activeOption.text === value.text;
+        return this.activeOption.id === value.id || this.activeOption.text === value.text;
     };
     SelectComponent.prototype.focusToInput = function (value) {
         var _this = this;
@@ -308,6 +306,11 @@ var SelectComponent = (function () {
             this.element.nativeElement.querySelector('.ui-select-container').focus();
         }
     };
+    SelectComponent.prototype.checkOutsideClicked = function (event) {
+        if (event.target !== this.element.nativeElement && !this.element.nativeElement.contains(event.target) && this.optionsOpened) {
+            this.hideOptions();
+        }
+    };
     __decorate([
         core_1.Input(), 
         __metadata('design:type', Boolean)
@@ -324,6 +327,10 @@ var SelectComponent = (function () {
         core_1.Input(), 
         __metadata('design:type', String)
     ], SelectComponent.prototype, "textField", void 0);
+    __decorate([
+        core_1.Input(), 
+        __metadata('design:type', String)
+    ], SelectComponent.prototype, "childrenField", void 0);
     __decorate([
         core_1.Input(), 
         __metadata('design:type', Boolean)
@@ -359,13 +366,17 @@ var SelectComponent = (function () {
         core_1.Output(), 
         __metadata('design:type', core_1.EventEmitter)
     ], SelectComponent.prototype, "typed", void 0);
+    __decorate([
+        core_1.Output(), 
+        __metadata('design:type', core_1.EventEmitter)
+    ], SelectComponent.prototype, "blur", void 0);
     SelectComponent = __decorate([
         core_1.Component({
             selector: 'ng-select',
-            directives: [off_click_1.OffClickDirective],
             pipes: [select_pipes_1.HighlightPipe],
             styles: [styles],
-            template: "\n  <div tabindex=\"0\"\n     *ngIf=\"multiple === false\"\n     (keyup)=\"mainClick($event)\"\n     [offClick]=\"clickedOutside\"\n     class=\"ui-select-container dropdown open\">\n    <div [ngClass]=\"{'ui-disabled': disabled}\"></div>\n    <div class=\"ui-select-match\"\n         *ngIf=\"!inputMode\">\n      <span tabindex=\"-1\"\n          class=\"btn btn-default btn-secondary form-control ui-select-toggle\"\n          (click)=\"matchClick($event)\"\n          style=\"outline: 0;\">\n        <span *ngIf=\"active.length <= 0\" class=\"ui-select-placeholder text-muted\">{{placeholder}}</span>\n        <span *ngIf=\"active.length > 0\" class=\"ui-select-match-text pull-left\"\n              [ngClass]=\"{'ui-select-allow-clear': allowClear && active.length > 0}\"\n              [innerHTML]=\"active[0].text\"></span>\n        <i class=\"dropdown-toggle pull-right\"></i>\n        <i class=\"caret pull-right\"></i>\n        <a *ngIf=\"allowClear && active.length>0\" style=\"margin-right: 15px; padding: 0;\"\n          (click)=\"remove(activeOption)\" class=\"close pull-right\">\n          &times;\n        </a>\n      </span>\n    </div>\n    <input type=\"text\" autocomplete=\"false\" tabindex=\"-1\"\n           (keydown)=\"inputEvent($event)\"\n           (keyup)=\"inputEvent($event, true)\"\n           [disabled]=\"disabled\"\n           class=\"form-control ui-select-search\"\n           *ngIf=\"inputMode\"\n           placeholder=\"{{active.length <= 0 ? placeholder : ''}}\">\n      " + optionsTemplate + "\n  </div>\n\n  <div tabindex=\"0\"\n     *ngIf=\"multiple === true\"\n     (keyup)=\"mainClick($event)\"\n     (focus)=\"focusToInput('')\"\n     class=\"ui-select-container ui-select-multiple dropdown form-control open\">\n    <div [ngClass]=\"{'ui-disabled': disabled}\"></div>\n    <span class=\"ui-select-match\">\n        <span *ngFor=\"let a of active\">\n            <span class=\"ui-select-match-item btn btn-default btn-xs\"\n                  tabindex=\"-1\"\n                  type=\"button\">\n               <a class=\"close\"\n                  style=\"margin-left: 5px; padding: 0;\"\n                  (click)=\"remove(a)\">&times;</a>\n               <span>{{a.text}}</span>\n           </span>\n        </span>\n    </span>\n    <input type=\"text\"\n           (keydown)=\"inputEvent($event)\"\n           (keyup)=\"inputEvent($event, true)\"\n           (click)=\"matchClick($event)\"\n           [disabled]=\"disabled\"\n           autocomplete=\"false\"\n           autocorrect=\"off\"\n           autocapitalize=\"off\"\n           spellcheck=\"false\"\n           class=\"form-control ui-select-search\"\n           placeholder=\"{{active.length <= 0 ? placeholder : ''}}\"\n           role=\"combobox\">\n    " + optionsTemplate + "\n  </div>\n  "
+            template: "<div tabindex=\"0\"\n   *ngIf=\"multiple === false\"\n   (keyup)=\"mainClick($event)\"\n   class=\"ui-select-container dropdown open\">\n  <div [ngClass]=\"{'ui-disabled': disabled}\"></div>\n  <div class=\"ui-select-match\" [hidden]=\"inputMode\">\n    <span tabindex=\"-1\"\n        class=\"btn btn-default btn-secondary form-control ui-select-toggle\"\n        (click)=\"matchClick($event)\"\n        style=\"outline: 0;\">\n      <span *ngIf=\"active.length <= 0\" class=\"ui-select-placeholder text-muted\">{{placeholder}}</span>\n      <span *ngIf=\"active.length > 0\" class=\"ui-select-match-text pull-left\"\n            [ngClass]=\"{'ui-select-allow-clear': allowClear && active.length > 0}\"\n            [innerHTML]=\"active[0].text\"></span>\n      <i class=\"dropdown-toggle pull-right\"></i>\n      <i class=\"caret pull-right\"></i>\n      <a *ngIf=\"allowClear && active.length>0\" style=\"margin-right: 15px; padding: 0;\"\n        (click)=\"remove(activeOption)\" class=\"close pull-right\">\n        &times;\n      </a>\n    </span>\n  </div>\n  <input type=\"text\" autocomplete=\"false\" tabindex=\"-1\"\n         (keydown)=\"inputEvent($event)\"\n         (keyup)=\"inputEvent($event, true)\"\n         [disabled]=\"disabled\"\n         class=\"form-control ui-select-search\"\n         *ngIf=\"inputMode\"\n         placeholder=\"{{active.length <= 0 ? placeholder : ''}}\">\n    " + optionsTemplate + "\n</div>\n\n<div tabindex=\"0\"\n   *ngIf=\"multiple === true\"\n   (keyup)=\"mainClick($event)\"\n   (focus)=\"focusToInput('')\"\n   class=\"ui-select-container ui-select-multiple dropdown form-control open\">\n  <div [ngClass]=\"{'ui-disabled': disabled}\"></div>\n  <span class=\"ui-select-match\">\n      <span *ngFor=\"let a of active\">\n          <span class=\"ui-select-match-item btn btn-default btn-xs\"\n                tabindex=\"-1\"\n                type=\"button\">\n             <a class=\"close\"\n                style=\"margin-left: 5px; padding: 0;\"\n                (click)=\"remove(a)\">&times;</a>\n             <span>{{a.text}}</span>\n         </span>\n      </span>\n  </span>\n  <input type=\"text\"\n         (keydown)=\"inputEvent($event)\"\n         (keyup)=\"inputEvent($event, true)\"\n         (click)=\"matchClick($event)\"\n         (blur)=\"doEvent('blur')\"\n         [disabled]=\"disabled\"\n         autocomplete=\"false\"\n         autocorrect=\"off\"\n         autocapitalize=\"off\"\n         spellcheck=\"false\"\n         class=\"form-control ui-select-search\"\n         placeholder=\"{{active.length <= 0 ? placeholder : ''}}\"\n         role=\"combobox\">\n  " + optionsTemplate + "\n</div>",
+            host: { '(document:click)': 'checkOutsideClicked($event)' }
         }), 
         __metadata('design:paramtypes', [core_1.ElementRef])
     ], SelectComponent);

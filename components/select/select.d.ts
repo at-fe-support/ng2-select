@@ -6,6 +6,7 @@ export declare class SelectComponent implements OnInit {
     placeholder: string;
     idField: string;
     textField: string;
+    childrenField: string;
     multiple: boolean;
     items: Array<any>;
     disabled: boolean;
@@ -14,6 +15,7 @@ export declare class SelectComponent implements OnInit {
     selected: EventEmitter<any>;
     removed: EventEmitter<any>;
     typed: EventEmitter<any>;
+    blur: EventEmitter<any>;
     options: Array<SelectItem>;
     itemObjects: Array<SelectItem>;
     activeOption: SelectItem;
@@ -30,7 +32,6 @@ export declare class SelectComponent implements OnInit {
     ngOnInit(): any;
     remove(item: SelectItem): void;
     doEvent(type: string, value: any): void;
-    clickedOutside(): void;
     firstItemHasChildren: boolean;
     protected matchClick(e: any): void;
     protected mainClick(event: any): void;
@@ -41,6 +42,7 @@ export declare class SelectComponent implements OnInit {
     private hideOptions();
     private selectActiveMatch();
     private selectMatch(value, e?);
+    private checkOutsideClicked(event);
 }
 export declare class Behavior {
     optionsMap: Map<string, number>;
